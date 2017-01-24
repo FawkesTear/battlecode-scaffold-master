@@ -3,6 +3,8 @@ import battlecode.common.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
+	static int gardNum = 0;
+
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -46,9 +48,19 @@ public strictfp class RobotPlayer {
                 Direction dir = randomDirection();
 
                 // Randomly attempt to build a gardener in this direction
-                if (rc.canHireGardener(dir) && Math.random() < .01) {
-                    rc.hireGardener(dir);
+                if (rc.getRoundNum() == 2999){
+                	rc.donate(rc.getTeamBullets());
+                	
                 }
+                //Spawn Gardener initially or when there are no gardeners left
+                else if (rc.getRoundNum() == 0 || gardNum == 0 && rc.canHireGardener(dir)){
+                	rc.hireGardener(dir);
+                	gardNum++;
+                }
+                // Randomly attempt to build a gardener in this direction
+                else if (rc.canHireGardener(dir) && Math.random() < .01 && rc.getTeamBullets() > 300 && gardNum < 5) {
+                    rc.hireGardener(dir);
+                    gardNum++;
 
                 // Move randomly
                 tryMove(randomDirection());
