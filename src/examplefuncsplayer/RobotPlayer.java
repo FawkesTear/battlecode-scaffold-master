@@ -43,12 +43,26 @@ public strictfp class RobotPlayer {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+float archonStrideRadius = RobotType.ARCHON.strideRadius;
 
                 // Generate a random direction
                 Direction dir = randomDirection();
-
-                // Randomly attempt to build a gardener in this direction
-                if (rc.getRoundNum() == 2999){
+                
+                Direction upRight = new Direction((float) Math.PI/4);
+                Direction upLeft = new Direction((float) (Math.PI/4)*3);
+                Direction downLeft = new Direction((float) (Math.PI/4)*5);
+                Direction downRight = new Direction((float) (Math.PI/4)*7);
+                
+                Direction up = Direction.NORTH;
+                Direction right = Direction.EAST;
+                Direction down = Direction.SOUTH;
+                Direction left =  Direction.WEST;
+                
+             
+                roundNumber = rc.getRoundNum();
+                
+                //donates all bullets at end, double check round number to make sure it is last round
+                if (rc.getRoundNum() == GameConstants.GAME_DEFAULT_ROUNDS - 1){
                 	rc.donate(rc.getTeamBullets());
                 	
                 }
@@ -58,18 +72,59 @@ public strictfp class RobotPlayer {
                 	gardNum++;
                 }
                 // Randomly attempt to build a gardener in this direction
-                else if (rc.canHireGardener(dir) && Math.random() < .01 && rc.getTeamBullets() > 300 && gardNum < 5) {
+                else if (rc.canHireGardener(dir) && Math.random() < .01 && rc.getTeamBullets() > 300) {
                     rc.hireGardener(dir);
                     gardNum++;
-
+                }
+                
+               
+               if (gotoCorner() == 0 && rc.canMove(up) && rc.canMove(right)){
+            	   rc.move(upRight);   
+               }
+               else if (gotoCorner() == 1 && rc.canMove(up) && rc.canMove(left)){
+            	   rc.move(upLeft);
+               }
+               else if (gotoCorner() == 2 && rc.canMove(down) && rc.canMove(right)){
+            	   rc.move(downRight);
+               }
+               else if (gotoCorner() == 3 && rc.canMove(down) && rc.canMove(left)){
+            	   rc.move(downLeft);
+               }
+               else if (gotoCorner() == 0 && rc.canMove(up) && rc.canMove(right)==false){
+            	   rc.move(up);
+               }
+               else if (gotoCorner() == 1 && rc.canMove(up) && rc.canMove(left)==false){
+            	   rc.move(up);
+               }
+               else if (gotoCorner() == 2 && rc.canMove(down) && rc.canMove(right)==false){
+            	   rc.move(down);
+               }
+               else if (gotoCorner() == 3 && rc.canMove(down) && rc.canMove(left)==false){
+            	   rc.move(down);
+               }
+               else if (gotoCorner() == 0 && rc.canMove(up)==false && rc.canMove(right)){
+            	   rc.move(right);
+               }
+               else if (gotoCorner() == 1 && rc.canMove(up)==false && rc.canMove(left)){
+            	   rc.move(left);
+               }
+               else if (gotoCorner() == 2 && rc.canMove(down)==false && rc.canMove(right)){
+            	   rc.move(right);
+               }
+               else if (gotoCorner() == 3 && rc.canMove(down)==false && rc.canMove(left)){
+            	   rc.move(left);
+               }
+               else{
+            	   
+               }
+                
                 // Move randomly
-                tryMove(randomDirection());
-
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
-
+                
+                
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
 
@@ -287,4 +342,31 @@ public strictfp class RobotPlayer {
 
         return (perpendicularDist <= rc.getType().bodyRadius);
     }
+	    static int gotoCorner(){
+    	float averageHeight = (GameConstants.MAP_MIN_HEIGHT + GameConstants.MAP_MAX_HEIGHT)/2;
+    	float averageWidth = (GameConstants.MAP_MAX_HEIGHT + GameConstants.MAP_MIN_WIDTH)/2;
+    	if(averageHeight-initialArchonLocation.y > .5*averageHeight ) {
+    		if(averageWidth-initialArchonLocation.x > .5*averageWidth){
+    			return 0;
+    		}
+    		else{
+    			return 1;
+    		}
+    		
+    		}
+
+    	
+    	else {
+    		if(averageWidth-initialArchonLocation.x > .5*averageWidth){
+    			return 2;
+    		}
+    		else {
+    			return 3;
+    		
+    }
+    		
+}
+    	
+    	
+}
 }
