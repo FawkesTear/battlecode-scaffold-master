@@ -35,15 +35,16 @@ public strictfp class RobotPlayer {
         }
 	}
 
-    static void runArchon() throws GameActionException {
+     static void runArchon() throws GameActionException {
         System.out.println("I'm an archon!");
-
+        initialArchonLocation = rc.getLocation();
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-float archonStrideRadius = RobotType.ARCHON.strideRadius;
+                float archonStrideRadius = RobotType.ARCHON.strideRadius;
+                 
 
                 // Generate a random direction
                 Direction dir = randomDirection();
@@ -57,6 +58,24 @@ float archonStrideRadius = RobotType.ARCHON.strideRadius;
                 Direction right = Direction.EAST;
                 Direction down = Direction.SOUTH;
                 Direction left =  Direction.WEST;
+                
+                //sense trees
+                TreeInfo[] avoidTree = rc.senseNearbyTrees(); //why is this wrong?
+                float treeRadius = avoidTree[3].getRadius();
+                MapLocation treeLoc = avoidTree[2].getLocation();
+                MapLocation myLocation = rc.getLocation();
+                float treeDistance = (float) Math.sqrt(Math.pow((treeLoc.x-myLocation.x), 2) + Math.pow((treeLoc.y-myLocation.y), 2));
+                float minTreeDistance = (float) Math.sqrt(2)*treeRadius+2;
+                
+                //sense bullets
+                BulletInfo[] bulletArray = rc.senseNearbyBullets();
+                for(BulletInfo nearbyBullets: bulletArray){
+                	 if (willCollideWithMe(nearbyBullets)==true){
+                  	   rc.move(dir);
+                     }
+                }
+                
+               
                 
              
                 roundNumber = rc.getRoundNum();
@@ -78,7 +97,42 @@ float archonStrideRadius = RobotType.ARCHON.strideRadius;
                 }
                 
                
-               if (gotoCorner() == 0 && rc.canMove(up) && rc.canMove(right)){
+                
+      //Archon Movement          
+          //dodge bullets     
+                
+              
+               
+          //run into tree
+               
+               if (gotoCorner() == 0 && rc.canMove(up) && rc.canMove(right) && treeDistance >= minTreeDistance && treeDistance < minTreeDistance+archonStrideRadius){
+            	   rc.move(up);   
+               }
+               else if (gotoCorner() == 1 && rc.canMove(up) && rc.canMove(left) && treeDistance >= minTreeDistance && treeDistance < minTreeDistance+archonStrideRadius){
+            	   rc.move(up);
+               }
+               else if (gotoCorner() == 2 && rc.canMove(down) && rc.canMove(right) && treeDistance >= minTreeDistance && treeDistance < minTreeDistance+archonStrideRadius){
+            	   rc.move(down);
+               }
+               else if (gotoCorner() == 3 && rc.canMove(down) && rc.canMove(left) && treeDistance >= minTreeDistance && treeDistance < minTreeDistance+archonStrideRadius){
+            	   rc.move(down);
+               }
+               else if (gotoCorner() == 0 && rc.canMove(up)==false && rc.canMove(left) && treeDistance < minTreeDistance+archonStrideRadius){
+            	   rc.move(left);   
+               }
+               else if (gotoCorner() == 1 && rc.canMove(up)==false && rc.canMove(right) && treeDistance < minTreeDistance+archonStrideRadius){
+            	   rc.move(right);
+               }
+               else if (gotoCorner() == 2 && rc.canMove(down)==false && rc.canMove(left) && treeDistance < minTreeDistance+archonStrideRadius){
+            	   rc.move(left);
+               }
+               else if (gotoCorner() == 3 && rc.canMove(down)==false && rc.canMove(right) && treeDistance < minTreeDistance+archonStrideRadius){
+            	   rc.move(right);
+               }
+               
+           //Archon move diagonally
+   
+               else if (gotoCorner() == 0 && rc.canMove(up) && rc.canMove(right)){
             	   rc.move(upRight);   
                }
                else if (gotoCorner() == 1 && rc.canMove(up) && rc.canMove(left)){
@@ -90,6 +144,10 @@ float archonStrideRadius = RobotType.ARCHON.strideRadius;
                else if (gotoCorner() == 3 && rc.canMove(down) && rc.canMove(left)){
             	   rc.move(downLeft);
                }
+               
+           
+           //run into side
+               
                else if (gotoCorner() == 0 && rc.canMove(up) && rc.canMove(right)==false){
             	   rc.move(up);
                }
@@ -114,13 +172,15 @@ float archonStrideRadius = RobotType.ARCHON.strideRadius;
                else if (gotoCorner() == 3 && rc.canMove(down)==false && rc.canMove(left)){
             	   rc.move(left);
                }
+               
+               
+     
                else{
             	   
                }
                 
                 // Move randomly
                 // Broadcast archon's location for other robots on the team to know
-                MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
                 
@@ -134,7 +194,6 @@ float archonStrideRadius = RobotType.ARCHON.strideRadius;
             }
         }
     }
-
 	static void runGardener() throws GameActionException {
         System.out.println("I'm a gardener!");
 
@@ -342,7 +401,7 @@ float archonStrideRadius = RobotType.ARCHON.strideRadius;
 
         return (perpendicularDist <= rc.getType().bodyRadius);
     }
-	    static int gotoCorner(){
+static int gotoCorner(){
     	float averageHeight = (GameConstants.MAP_MIN_HEIGHT + GameConstants.MAP_MAX_HEIGHT)/2;
     	float averageWidth = (GameConstants.MAP_MAX_HEIGHT + GameConstants.MAP_MIN_WIDTH)/2;
     	if(averageHeight-initialArchonLocation.y > .5*averageHeight ) {
