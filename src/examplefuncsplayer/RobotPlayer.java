@@ -70,13 +70,31 @@ public strictfp class RobotPlayer {
                 //sense bullets
                 BulletInfo[] bulletArray = rc.senseNearbyBullets();
                 for(BulletInfo nearbyBullets: bulletArray){
-                	 if (willCollideWithMe(nearbyBullets)==true){
-                  	   rc.move(dir);
-                     }
+                	int i = 0;
+                	while(willCollideWithMe(nearbyBullets, dir)==1 || i==100){
+                		dir = randomDirection();
+                		i++;
+                	}
+                	 if (willCollideWithMe(nearbyBullets, dir)==0){
+                		 i=0;
+                		 while(rc.hasMoved()==false || i==100){
+                  		   if (rc.canMove(dir)==false && willCollideWithMe(nearbyBullets, dir)==0){
+                  			   dir = randomDirection();
+                  			   i++;
+                  			   while(willCollideWithMe(nearbyBullets, dir)==1){
+                  				  dir = randomDirection(); 
+                  			   }
+                  		   }
+                  		   
+                  		   else{
+                  			   rc.move(dir);
+                  		   }
+                  	   }}
+                     
+               		else if(willCollideWithMe(nearbyBullets, dir)==2) { 
+
                 }
-                
-               
-                
+             }
              
                 roundNumber = rc.getRoundNum();
                 
@@ -196,7 +214,7 @@ public strictfp class RobotPlayer {
     }
 	static void runGardener() throws GameActionException {
         System.out.println("I'm a gardener!");
-
+        
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
@@ -217,7 +235,36 @@ public strictfp class RobotPlayer {
                 } else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) {
                     rc.buildRobot(RobotType.LUMBERJACK, dir);
                 }
+                
+                //dodge bullets
+                BulletInfo[] bulletArray = rc.senseNearbyBullets();
+                for(BulletInfo nearbyBullets: bulletArray){
+                	int i = 0;
+                	while(willCollideWithMe(nearbyBullets, dir)==1 || i==50){
+                		dir = randomDirection();
+                		i++;
+                	}
+                	 if (willCollideWithMe(nearbyBullets, dir)==0){
+                		 i=0;
+                		 while(rc.hasMoved()==false || i==50){
+                  		   if (rc.canMove(dir)==false && willCollideWithMe(nearbyBullets, dir)==0){
+                  			   dir = randomDirection();
+                  			   i++;
+                  			   while(willCollideWithMe(nearbyBullets, dir)==1){
+                  				  dir = randomDirection(); 
+                  			   }
+                  		   }
+                  		   
+                  		   else{
+                  			   rc.move(dir);
+                  		   }
+                  	   }}
+                     
+               		else if(willCollideWithMe(nearbyBullets, dir)==2) { 
 
+                }
+             }
+                
                 // Move randomly
                 tryMove(randomDirection());
 
@@ -376,9 +423,12 @@ public strictfp class RobotPlayer {
      * @param bullet The bullet in question
      * @return True if the line of the bullet's path intersects with this robot's current position.
      */
-    static boolean willCollideWithMe(BulletInfo bullet) {
+    static int willCollideWithMe(BulletInfo bullet, Direction futureDodge) {
         MapLocation myLocation = rc.getLocation();
-
+        
+        RobotType robotClass = rc.getType();
+        float strideRadius = robotClass.strideRadius;
+        
         // Get relevant bullet information
         Direction propagationDirection = bullet.dir;
         MapLocation bulletLocation = bullet.location;
@@ -387,19 +437,37 @@ public strictfp class RobotPlayer {
         Direction directionToRobot = bulletLocation.directionTo(myLocation);
         float distToRobot = bulletLocation.distanceTo(myLocation);
         float theta = propagationDirection.radiansBetween(directionToRobot);
-
+        
+        MapLocation newLocation = myLocation.add(futureDodge, strideRadius);
+        float distToNewLoc = bulletLocation.distanceTo(newLocation);
+        Direction directionToNewLoc = bulletLocation.directionTo(newLocation);
+        float newTheta = propagationDirection.radiansBetween(directionToNewLoc);
+        
         // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
-        if (Math.abs(theta) > Math.PI/2) {
-            return false;
+        if (Math.abs(theta) > Math.PI/2 && Math.abs(newTheta)>Math.PI/2) {
+            return 2;
         }
 
         // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
         // This is the distance of a line that goes from myLocation and intersects perpendicularly with propagationDirection.
         // This corresponds to the smallest radius circle centered at our location that would intersect with the
         // line that is the path of the bullet.
-        float perpendicularDist = (float)Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
-
-        return (perpendicularDist <= rc.getType().bodyRadius);
+        float perpendicularDist = (float)Math.abs(distToRobot * Math.tan(theta)); // soh cah toa :)
+        float newPerpendicularDist = (float)Math.abs(distToNewLoc * Math.tan(newTheta));
+        boolean collision = perpendicularDist <= rc.getType().bodyRadius;
+        boolean newCollision = newPerpendicularDist <= rc.getType().bodyRadius;
+        if (collision==true && newCollision==false){
+        	return 0;
+        }
+        else if(collision==true && newCollision==true){
+        	return 1;
+        }
+        else if(collision==false && newCollision==false){
+        	return 2;
+        }
+        else{
+        	return 3;
+        }
     }
 static int gotoCorner(){
     	float averageHeight = (GameConstants.MAP_MIN_HEIGHT + GameConstants.MAP_MAX_HEIGHT)/2;
