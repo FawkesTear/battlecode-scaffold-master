@@ -278,7 +278,7 @@ public strictfp class RobotPlayer {
         }
     }
 
-    static void runSoldier() throws GameActionException {
+        static void runSoldier() throws GameActionException {
         System.out.println("I'm an soldier!");
         Team enemy = rc.getTeam().opponent();
 
@@ -288,12 +288,31 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 MapLocation myLocation = rc.getLocation();
-
+                int x = rc.readBroadcast(2);
+                int y = rc.readBroadcast(3);
+                Direction dir = new Direction((float)Math.atan(x/y*1.0));
+                BulletInfo[] bullets = rc.senseNearbyBullets();
+                if(bullets.length > 0)
+                {
+                if(willCollideWithMe(bullets[0], dir) == 0)
+                if(rc.canMove(dir))
+                	rc.move(dir);
+                }
                 // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
                 // If there are some...
-                if (robots.length > 0) {
+                if(robots.length > 3)
+                	if(rc.canFirePentadShot())
+                	{
+                		rc.firePentadShot(rc.getLocation().directionTo(robots[0].location));
+                	}
+                	else if(robots.length > 1)
+                		if(rc.canFireTriadShot())
+                		{
+                			rc.fireTriadShot(rc.getLocation().directionTo(robots[0].location));
+                		}
+                	else if (robots.length > 0) {
                     // And we have enough bullets, and haven't attacked yet this turn...
                     if (rc.canFireSingleShot()) {
                         // ...Then fire a bullet in the direction of the enemy.
@@ -301,18 +320,11 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                // Move randomly
-                tryMove(randomDirection());
+    
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
 
-            } catch (Exception e) {
-                System.out.println("Soldier Exception");
-                e.printStackTrace();
-            }
-        }
-    }
 
     static void runLumberjack() throws GameActionException {
         System.out.println("I'm a lumberjack!");
